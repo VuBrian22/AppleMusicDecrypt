@@ -42,9 +42,9 @@ async def download_file(filename: str, background_tasks: BackgroundTasks):
         import time
         time.sleep(20) # 20 second delay
         try:
-            os.remove(file_path)
+            shutil.rmtree(file_path.parent)
         except OSError as e:
-            print(f"Error deleting file {file_path}: {e}")
+            print(f"Error deleting directory {file_path.parent}: {e}")
 
     background_tasks.add_task(cleanup)
     return FileResponse(file_path, media_type='application/octet-stream', filename=file_path.name)
