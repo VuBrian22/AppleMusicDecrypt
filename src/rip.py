@@ -84,6 +84,7 @@ async def decrypt_done(adam_id: str):
         for file in saved_files:
             file.unlink()
 
+        await asyncio.sleep(1) # Add a 1-second delay
         task.done_callback(zip_path)
 
     await task_done(task, Status.DONE)
