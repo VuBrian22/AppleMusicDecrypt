@@ -32,7 +32,7 @@ import pathlib
 
 if __name__ == '__main__':
     cmd = InteractiveShell(loop)
-    static_path = pathlib.Path(__file__).parent.resolve() / "src" / "static"
+    static_path = pathlib.Path(__file__).parent.resolve() / "static"
     web_server_thread = threading.Thread(target=start_web_server, args=(loop, cmd, static_path))
     web_server_thread.daemon = True
     web_server_thread.start()
