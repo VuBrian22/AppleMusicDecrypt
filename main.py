@@ -41,14 +41,20 @@ if __name__ == '__main__':
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Apple Music Decrypt</title>
+    <title>Apple Music Downloader</title>
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <h1>Apple Music Decrypt</h1>
-    <input type="text" id="apple-music-url" placeholder="Paste Apple Music URL here" size="100">
-    <button onclick="download()">Download</button>
-    <p id="status"></p>
-    <a id="download-link" style="display:none">Download File</a>
+    <div class="downloader-container">
+        <h1>Apple Music Downloader</h1>
+        <p>Download songs, albums, and playlists from Apple Music.</p>
+        <div class="input-container">
+            <input type="text" id="apple-music-url" placeholder="Paste your link here">
+            <button onclick="download()">Download</button>
+        </div>
+        <p id="status"></p>
+        <a id="download-link" style="display:none">Download File</a>
+    </div>
 
     <script>
         async function download() {

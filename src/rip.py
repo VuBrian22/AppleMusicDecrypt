@@ -52,6 +52,8 @@ async def recv_decrypted_sample(adam_id: str, sample_index: int, sample: bytes):
         safely_create_task(decrypt_done(adam_id))
 
 
+import zipfile
+
 async def decrypt_done(adam_id: str):
     task = adam_id_task_mapping[adam_id]
     codec = get_codec_from_codec_id(task.m3u8Info.codec_id)
@@ -63,17 +65,26 @@ async def decrypt_done(adam_id: str):
             song = await run_sync(fix_encapsulate, song)
         song = await run_sync(write_metadata, song, task.metadata, it(Config).metadata.embedMetadata,
                               it(Config).download.coverFormat, task.info.params)
-        if codec == Codec.AAC or codec == Codec.AAC_DOWNMIX or codec == Codec.AAC_BINAURAL:
+        if codec == Code.AAC or codec == Codec.AAC_DOWNMIX or codec == Codec.AAC_BINAURAL:
             song = await run_sync(fix_esds_box, task.info.raw, song)
 
     if not await run_sync(check_song_integrity, song):
         task.logger.failed_integrity()
 
-    filename = await run_sync(save, song, codec, task.metadata, task.playlist)
+    saved_files = await run_sync(save, song, codec, task.metadata, task.playlist)
     task.logger.saved()
 
     if task.done_callback:
-        task.done_callback(filename)
+        song_path = saved_files[0]
+        zip_path = song_path.parent / (song_path.stem + ".zip")
+        with zipfile.ZipFile(zip_path, 'w') as zipf:
+            for file in saved_files:
+                zipf.write(file, file.name)
+        
+        for file in saved_files:
+            file.unlink()
+
+        task.done_callback(zip_path)
 
     await task_done(task, Status.DONE)
 

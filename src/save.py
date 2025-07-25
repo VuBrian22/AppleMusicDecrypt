@@ -13,15 +13,24 @@ def save(song: bytes, codec: str, metadata: SongMetadata, playlist: PlaylistInfo
     song_name, dir_path = get_song_name_and_dir_path(codec.upper(), metadata, playlist)
     if not dir_path.exists() or not dir_path.is_dir():
         os.makedirs(dir_path.absolute())
+    
+    saved_files = []
+    
     song_path = dir_path / Path(song_name + get_suffix(codec, it(Config).download.atmosConventToM4a))
     with open(song_path.absolute(), "wb") as f:
         f.write(song)
+    saved_files.append(song_path)
+
     if it(Config).download.saveCover and not playlist:
         cover_path = dir_path / Path(f"cover.{it(Config).download.coverFormat}")
         with open(cover_path.absolute(), "wb") as f:
             f.write(metadata.cover)
+        saved_files.append(cover_path)
+
     if it(Config).download.saveLyrics and metadata.lyrics:
         lrc_path = dir_path / Path(song_name + ".lrc")
         with open(lrc_path.absolute(), "w", encoding="utf-8") as f:
             f.write(ttml_convent_to_lrc(metadata.lyrics))
-    return song_path.absolute()
+        saved_files.append(lrc_path)
+        
+    return saved_files
