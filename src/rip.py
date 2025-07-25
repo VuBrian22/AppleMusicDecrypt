@@ -79,7 +79,7 @@ async def decrypt_done(adam_id: str):
         zip_path = song_path.parent / (song_path.stem + ".zip")
         with zipfile.ZipFile(zip_path, 'w') as zipf:
             for file in saved_files:
-                zipf.write(file, file.name)
+                zipf.write(file, arcname=file.name)
         
         for file in saved_files:
             file.unlink()
