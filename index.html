@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Apple Music Decrypt</title>
+</head>
+<body>
+    <h1>Apple Music Decrypt</h1>
+    <input type="text" id="apple-music-url" placeholder="Paste Apple Music URL here" size="100">
+    <button onclick="download()">Download</button>
+    <p id="status"></p>
+
+    <script>
+        async function download() {
+            const url = document.getElementById('apple-music-url').value;
+            const status = document.getElementById('status');
+            status.textContent = 'Starting download...';
+
+            const response = await fetch('/api/download', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: url }),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                status.textContent = result.message;
+            } else {
+                status.textContent = 'Error: ' + result.error;
+            }
+        }
+    </script>
+</body>
+</html>
