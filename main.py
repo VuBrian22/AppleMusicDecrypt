@@ -30,7 +30,7 @@ from src.web_api import start_web_server
 import threading
 
 if __name__ == '__main__':
-    web_server_thread = threading.Thread(target=start_web_server)
+    web_server_thread = threading.Thread(target=start_web_server, args=(loop,))
     web_server_thread.daemon = True
     web_server_thread.start()
 
