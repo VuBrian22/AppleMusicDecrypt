@@ -38,13 +38,7 @@ async def read_index(request: Request):
 async def download_file(filename: str, background_tasks: BackgroundTasks):
     file_path = pathlib.Path(filename).resolve()
     
-    def cleanup():
-        try:
-            shutil.rmtree(file_path.parent)
-        except OSError as e:
-            print(f"Error deleting directory {file_path.parent}: {e}")
-
-    background_tasks.add_task(cleanup)
+    background_tasks.add_task(os.remove, file_path)
     return FileResponse(file_path, media_type='application/octet-stream', filename=file_path.name)
 
 def start_web_server(main_loop: asyncio.AbstractEventLoop, shell_instance: InteractiveShell, static_path: pathlib.Path):
