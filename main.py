@@ -32,7 +32,11 @@ import pathlib
 
 if __name__ == '__main__':
     cmd = InteractiveShell(loop)
+    
+    # Ensure the static directory exists before starting the server
     static_path = pathlib.Path(__file__).parent.resolve() / "static"
+    static_path.mkdir(exist_ok=True)
+
     web_server_thread = threading.Thread(target=start_web_server, args=(loop, cmd, static_path))
     web_server_thread.daemon = True
     web_server_thread.start()
