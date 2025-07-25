@@ -78,6 +78,7 @@ if __name__ == '__main__':
             if (response.ok && result.filename) {
                 status.textContent = result.message;
                 downloadLink.href = `/api/download-file?filename=${encodeURIComponent(result.filename)}`;
+                downloadLink.download = result.filename.split('/').pop(); // Suggest a filename for the user
                 downloadLink.style.display = 'block';
             } else {
                 status.textContent = 'Error: ' + (result.message || 'Unknown error');
