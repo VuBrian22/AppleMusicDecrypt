@@ -54,6 +54,9 @@ async def recv_decrypted_sample(adam_id: str, sample_index: int, sample: bytes):
 
 import zipfile
 
+import tempfile
+import shutil
+
 async def decrypt_done(adam_id: str):
     task = adam_id_task_mapping[adam_id]
     codec = get_codec_from_codec_id(task.m3u8Info.codec_id)
@@ -71,11 +74,11 @@ async def decrypt_done(adam_id: str):
     if not await run_sync(check_song_integrity, song):
         task.logger.failed_integrity()
 
-    saved_files = await run_sync(save, song, codec, task.metadata, task.playlist)
+    temp_dir = tempfile.mkdtemp()
+    saved_files = await run_sync(save, song, codec, task.metadata, task.playlist, temp_dir=temp_dir)
     task.logger.saved()
 
     if task.done_callback:
-        # No zipping here. Just pass the list of raw file paths to the callback.
         task.done_callback(saved_files)
 
     await task_done(task, Status.DONE)
@@ -96,8 +99,7 @@ async def rip_song(url: Song, codec: str, flags: Flags = Flags(),
                 for file in saved_files:
                     zipf.write(file, arcname=file.name)
             
-            for file in saved_files:
-                file.unlink()
+            shutil.rmtree(song_path.parent)
 
             done_callback(zip_path)
         elif done_callback:
@@ -195,10 +197,9 @@ async def rip_album(url: Album, codec: str, flags: Flags = Flags(), parent_done:
             zip_path = saved_files[0].parent / (album_info.data[0].attributes.name + ".zip")
             with zipfile.ZipFile(zip_path, 'w') as zipf:
                 for file in saved_files:
-                    zipf.write(file, file.name)
+                    zipf.write(file, arcname=file.name)
             
-            for file in saved_files:
-                file.unlink()
+            shutil.rmtree(saved_files[0].parent)
 
             done_callback(zip_path)
 
@@ -249,10 +250,9 @@ async def rip_playlist(url: Playlist, codec: str, flags: Flags = Flags(), done_c
             zip_path = saved_files[0].parent / (playlist_info.data[0].attributes.name + ".zip")
             with zipfile.ZipFile(zip_path, 'w') as zipf:
                 for file in saved_files:
-                    zipf.write(file, file.name)
-            
-            for file in saved_files:
-                file.unlink()
+                    zipf.write(file, arcname=file.name)
+
+            shutil.rmtree(saved_files[0].parent)
 
             done_callback(zip_path)
 
