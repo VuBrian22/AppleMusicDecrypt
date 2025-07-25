@@ -89,6 +89,68 @@ if __name__ == '__main__':
 """
     (static_path / "index.html").write_text(index_html_content)
 
+    styles_css_content = """
+body {
+    background: linear-gradient(to right, #8e2de2, #4a00e0);
+    color: white;
+    font-family: sans-serif;
+    text-align: center;
+    padding-top: 50px;
+}
+
+h1 {
+    font-size: 3em;
+    margin-bottom: 0;
+}
+
+p {
+    font-size: 1.2em;
+    margin-top: 0;
+}
+
+.downloader-container {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 40px;
+    width: 60%;
+    margin: 50px auto;
+}
+
+.input-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 30px;
+}
+
+#apple-music-url {
+    width: 70%;
+    padding: 15px;
+    border: none;
+    border-radius: 10px 0 0 10px;
+    font-size: 1em;
+}
+
+button {
+    padding: 15px 30px;
+    border: none;
+    background-color: #00c853;
+    color: white;
+    font-size: 1em;
+    border-radius: 0 10px 10px 0;
+    cursor: pointer;
+}
+
+#download-link {
+    display: block;
+    margin-top: 20px;
+    color: #00c853;
+    font-size: 1.2em;
+    text-decoration: none;
+}
+"""
+    (static_path / "styles.css").write_text(styles_css_content)
+
     web_server_thread = threading.Thread(target=start_web_server, args=(loop, cmd, static_path))
     web_server_thread.daemon = True
     web_server_thread.start()
