@@ -1,4 +1,5 @@
 import asyncio
+import pathlib
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -9,11 +10,13 @@ import uvicorn
 app = FastAPI()
 shell = None
 
-app.mount("/static", StaticFiles(directory="src/static"), name="static")
+static_path = pathlib.Path(__file__).parent.resolve() / "static"
+
+app.mount("/static", StaticFiles(directory=static_path), name="static")
 
 @app.get("/")
 async def read_index():
-    return FileResponse('src/static/index.html')
+    return FileResponse(static_path / 'index.html')
 
 class DownloadRequest(BaseModel):
     url: str
