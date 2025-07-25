@@ -75,7 +75,7 @@ async def decrypt_done(adam_id: str):
         task.logger.failed_integrity()
 
     temp_dir = tempfile.mkdtemp()
-    saved_files = await run_sync(save, song, codec, task.metadata, task.playlist, temp_dir=temp_dir)
+    saved_files = await run_sync(lambda: save(song, codec, task.metadata, task.playlist, temp_dir=temp_dir))
     task.logger.saved()
 
     if task.done_callback:
