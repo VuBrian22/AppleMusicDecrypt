@@ -27,12 +27,14 @@ class Task:
     playlist: PlaylistInfo = None
     decryptedSamples: list[Optional[bytes]]
     decryptedCount: int
+    done_callback: callable = None
 
-    def __init__(self, adam_id: str, parent_done: ParentDoneHandler = None, playlist: PlaylistInfo = None):
+    def __init__(self, adam_id: str, parent_done: ParentDoneHandler = None, playlist: PlaylistInfo = None, done_callback: callable = None):
         self.adamId = adam_id
         self.status = Status.WAITING
         self.parentDone = parent_done
         self.playlist = playlist
+        self.done_callback = done_callback
 
     def update_status(self, status: Status):
         self.status = status

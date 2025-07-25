@@ -72,6 +72,9 @@ async def decrypt_done(adam_id: str):
     filename = await run_sync(save, song, codec, task.metadata, task.playlist)
     task.logger.saved()
 
+    if task.done_callback:
+        task.done_callback(filename)
+
     await task_done(task, Status.DONE)
 
     if it(Config).download.afterDownloaded:
@@ -80,8 +83,8 @@ async def decrypt_done(adam_id: str):
 
 
 async def rip_song(url: Song, codec: str, flags: Flags = Flags(),
-                   parent_done: ParentDoneHandler = None, playlist: PlaylistInfo = None):
-    task = Task(adam_id=url.id, parent_done=parent_done, playlist=playlist)
+                   parent_done: ParentDoneHandler = None, playlist: PlaylistInfo = None, done_callback: callable = None):
+    task = Task(adam_id=url.id, parent_done=parent_done, playlist=playlist, done_callback=done_callback)
     adam_id_task_mapping[url.id] = task
     task.init_logger()
     await task_lock.acquire()

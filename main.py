@@ -48,12 +48,16 @@ if __name__ == '__main__':
     <input type="text" id="apple-music-url" placeholder="Paste Apple Music URL here" size="100">
     <button onclick="download()">Download</button>
     <p id="status"></p>
+    <a id="download-link" style="display:none">Download File</a>
 
     <script>
         async function download() {
             const url = document.getElementById('apple-music-url').value;
             const status = document.getElementById('status');
+            const downloadLink = document.getElementById('download-link');
+
             status.textContent = 'Starting download...';
+            downloadLink.style.display = 'none';
 
             const response = await fetch('/api/download', {
                 method: 'POST',
@@ -65,10 +69,12 @@ if __name__ == '__main__':
 
             const result = await response.json();
 
-            if (response.ok) {
+            if (response.ok && result.filename) {
                 status.textContent = result.message;
+                downloadLink.href = `/api/download-file?filename=${encodeURIComponent(result.filename)}`;
+                downloadLink.style.display = 'block';
             } else {
-                status.textContent = 'Error: ' + result.error;
+                status.textContent = 'Error: ' + (result.message || 'Unknown error');
             }
         }
     </script>

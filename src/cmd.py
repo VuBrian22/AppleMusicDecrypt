@@ -61,10 +61,10 @@ class InteractiveShell:
                 self.loop.stop()
                 sys.exit()
 
-    async def execute_command(self, cmd: str):
-        await self.command_parser(cmd)
+    async def execute_command(self, cmd: str, q: 'queue.Queue' = None):
+        await self.command_parser(cmd, q)
 
-    async def do_download(self, raw_url: str, codec: str, force_download: bool, include: bool = False):
+    async def do_download(self, raw_url: str, codec: str, force_download: bool, include: bool = False, q: 'queue.Queue' = None):
         url = AppleMusicURL.parse_url(raw_url)
         if not url:
             real_url = await it(WebAPI).get_real_url(raw_url)
@@ -72,9 +72,14 @@ class InteractiveShell:
             if not url:
                 it(GlobalLogger).logger.error("Illegal URL!")
                 return
+        
+        def done_callback(filename):
+            if q:
+                q.put(filename)
+
         match url.type:
             case URLType.Song:
-                safely_create_task(rip_song(url, codec, Flags(force_save=force_download)))
+                safely_create_task(rip_song(url, codec, Flags(force_save=force_download), done_callback=done_callback))
             case URLType.Album:
                 safely_create_task(rip_album(url, codec, Flags(force_save=force_download)))
             case URLType.Artist:
@@ -84,6 +89,22 @@ class InteractiveShell:
             case _:
                 it(GlobalLogger).logger.error("Unsupported URLType")
                 return
+    
+    async def command_parser(self, cmd: str, q: 'queue.Queue' = None):
+        if not cmd.strip():
+            return
+        cmds = cmd.split(" ")
+        try:
+            args = self.parser.parse_args(cmds)
+        except (argparse.ArgumentError, argparse.ArgumentTypeError, SystemExit):
+            it(GlobalLogger).logger.warning(f"Unknown command: {cmd}")
+            return
+        match cmds[0]:
+            case "download" | "dl":
+                await self.do_download(args.url, args.codec, args.force, args.include, q)
+            case "exit":
+                self.loop.stop()
+                sys.exit()
 
     def bottom_toolbar(self):
         return f"Download Speed: {it(SpeedMeasurer).download_speed()}, Decrypt Speed: {it(SpeedMeasurer).decrypt_speed()}, Tasks: {get_tasks_num()}"

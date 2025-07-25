@@ -1,5 +1,7 @@
 import asyncio
+import os
 import pathlib
+import queue
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -15,14 +17,32 @@ class DownloadRequest(BaseModel):
 @app.post("/api/download")
 async def download(request: DownloadRequest, app_request: Request):
     shell = app_request.app.state.shell
+    q = queue.Queue()
     command = f"dl {request.url}"
-    asyncio.run_coroutine_threadsafe(shell.execute_command(command), shell.loop)
-    return {"message": "Download started"}
+    asyncio.run_coroutine_threadsafe(shell.execute_command(command, q), shell.loop)
+    
+    try:
+        filename = q.get(timeout=300) # 5 minute timeout
+        return {"message": "Download complete", "filename": str(filename)}
+    except queue.Empty:
+        return {"message": "Download timed out"}
+
 
 @app.get("/")
 async def read_index(request: Request):
     static_path = request.app.state.static_path
     return FileResponse(static_path / 'index.html')
+
+@app.get("/api/download-file")
+async def download_file(filename: str):
+    try:
+        return FileResponse(filename, media_type='application/octet-stream', filename=pathlib.Path(filename).name)
+    finally:
+        # Delete the file after sending it
+        try:
+            os.remove(filename)
+        except OSError as e:
+            print(f"Error deleting file {filename}: {e}")
 
 def start_web_server(main_loop: asyncio.AbstractEventLoop, shell_instance: InteractiveShell, static_path: pathlib.Path):
     app.state.shell = shell_instance
