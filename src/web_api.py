@@ -38,7 +38,15 @@ async def read_index(request: Request):
 async def download_file(filename: str, background_tasks: BackgroundTasks):
     file_path = pathlib.Path(filename).resolve()
     
-    background_tasks.add_task(os.remove, file_path)
+    def cleanup():
+        import time
+        time.sleep(20) # 20 second delay
+        try:
+            os.remove(file_path)
+        except OSError as e:
+            print(f"Error deleting file {file_path}: {e}")
+
+    background_tasks.add_task(cleanup)
     return FileResponse(file_path, media_type='application/octet-stream', filename=file_path.name)
 
 def start_web_server(main_loop: asyncio.AbstractEventLoop, shell_instance: InteractiveShell, static_path: pathlib.Path):
