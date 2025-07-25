@@ -39,11 +39,7 @@ async def download_file(filename: str):
     try:
         return FileResponse(file_path, media_type='application/octet-stream', filename=file_path.name)
     finally:
-        # Delete the file after sending it
-        try:
-            os.remove(file_path)
-        except OSError as e:
-            print(f"Error deleting file {file_path}: {e}")
+        pass
 
 def start_web_server(main_loop: asyncio.AbstractEventLoop, shell_instance: InteractiveShell, static_path: pathlib.Path):
     app.state.shell = shell_instance

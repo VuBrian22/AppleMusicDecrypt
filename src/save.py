@@ -9,13 +9,10 @@ from src.models import PlaylistInfo
 from src.utils import ttml_convent_to_lrc, get_song_name_and_dir_path, get_suffix
 
 
-import tempfile
-
-def save(song: bytes, codec: str, metadata: SongMetadata, playlist: PlaylistInfo = None, temp_dir: str = None):
+def save(song: bytes, codec: str, metadata: SongMetadata, playlist: PlaylistInfo = None):
     song_name, dir_path = get_song_name_and_dir_path(codec.upper(), metadata, playlist)
     
-    if temp_dir:
-        dir_path = Path(temp_dir)
+    dir_path = Path("downloads") / dir_path
 
     if not dir_path.exists() or not dir_path.is_dir():
         os.makedirs(dir_path.absolute())

@@ -52,9 +52,6 @@ async def recv_decrypted_sample(adam_id: str, sample_index: int, sample: bytes):
         safely_create_task(decrypt_done(adam_id))
 
 
-import tempfile
-import shutil
-
 async def decrypt_done(adam_id: str):
     task = adam_id_task_mapping[adam_id]
     codec = get_codec_from_codec_id(task.m3u8Info.codec_id)
@@ -72,8 +69,7 @@ async def decrypt_done(adam_id: str):
     if not await run_sync(check_song_integrity, song):
         task.logger.failed_integrity()
 
-    temp_dir = tempfile.mkdtemp()
-    saved_files = await run_sync(lambda: save(song, codec, task.metadata, task.playlist, temp_dir=temp_dir))
+    saved_files = await run_sync(lambda: save(song, codec, task.metadata, task.playlist))
     task.logger.saved()
 
     if task.done_callback:
