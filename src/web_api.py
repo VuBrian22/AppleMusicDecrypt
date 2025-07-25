@@ -35,14 +35,15 @@ async def read_index(request: Request):
 
 @app.get("/api/download-file")
 async def download_file(filename: str):
+    file_path = pathlib.Path(filename).resolve()
     try:
-        return FileResponse(filename, media_type='application/octet-stream', filename=pathlib.Path(filename).name)
+        return FileResponse(file_path, media_type='application/octet-stream', filename=file_path.name)
     finally:
         # Delete the file after sending it
         try:
-            os.remove(filename)
+            os.remove(file_path)
         except OSError as e:
-            print(f"Error deleting file {filename}: {e}")
+            print(f"Error deleting file {file_path}: {e}")
 
 def start_web_server(main_loop: asyncio.AbstractEventLoop, shell_instance: InteractiveShell, static_path: pathlib.Path):
     app.state.shell = shell_instance
