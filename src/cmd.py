@@ -81,11 +81,11 @@ class InteractiveShell:
             case URLType.Song:
                 safely_create_task(rip_song(url, codec, Flags(force_save=force_download), done_callback=done_callback))
             case URLType.Album:
-                safely_create_task(rip_album(url, codec, Flags(force_save=force_download)))
+                safely_create_task(rip_album(url, codec, Flags(force_save=force_download), done_callback=done_callback))
             case URLType.Artist:
                 safely_create_task(rip_artist(url, codec, Flags(force_save=force_download, include_participate_in_works=include)))
             case URLType.Playlist:
-                safely_create_task(rip_playlist(url, codec, Flags(force_save=force_download)))
+                safely_create_task(rip_playlist(url, codec, Flags(force_save=force_download), done_callback=done_callback))
             case _:
                 it(GlobalLogger).logger.error("Unsupported URLType")
                 return

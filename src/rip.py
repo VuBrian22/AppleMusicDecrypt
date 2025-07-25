@@ -166,7 +166,7 @@ async def rip_song(url: Song, codec: str, flags: Flags = Flags(),
         await it(WrapperManager).decrypt(task.adamId, task.m3u8Info.keys[sample.descIndex], sample.data, sampleIndex)
 
 
-async def rip_album(url: Album, codec: str, flags: Flags = Flags(), parent_done: ParentDoneHandler = None):
+async def rip_album(url: Album, codec: str, flags: Flags = Flags(), parent_done: ParentDoneHandler = None, done_callback: callable = None):
     album_info = await it(WebAPI).get_album_info(url.id, url.storefront, it(Config).region.language)
     logger = RipLogger(url.type, url.id)
     logger.set_fullname(album_info.data[0].attributes.artistName, album_info.data[0].attributes.name)
@@ -176,16 +176,31 @@ async def rip_album(url: Album, codec: str, flags: Flags = Flags(), parent_done:
         logger.not_exist()
         return
 
+    saved_files = []
     async def on_children_done():
         logger.done()
         if parent_done:
             await parent_done.try_done()
+        
+        if done_callback:
+            zip_path = saved_files[0].parent / (album_info.data[0].attributes.name + ".zip")
+            with zipfile.ZipFile(zip_path, 'w') as zipf:
+                for file in saved_files:
+                    zipf.write(file, file.name)
+            
+            for file in saved_files:
+                file.unlink()
+
+            done_callback(zip_path)
+
+    def song_done_callback(filename):
+        saved_files.append(filename)
 
     done_handler = ParentDoneHandler(len(album_info.data[0].relationships.tracks.data), on_children_done)
 
     for track in album_info.data[0].relationships.tracks.data:
         song = Song(id=track.id, storefront=url.storefront, url="", type=URLType.Song)
-        safely_create_task(rip_song(song, codec, flags, done_handler))
+        safely_create_task(rip_song(song, codec, flags, done_handler, done_callback=song_done_callback))
 
 
 async def rip_artist(url: Album, codec: str, flags: Flags = Flags()):
@@ -210,7 +225,7 @@ async def rip_artist(url: Album, codec: str, flags: Flags = Flags()):
             safely_create_task(rip_album(Album.parse_url(album_url), codec, flags, done_handler))
 
 
-async def rip_playlist(url: Playlist, codec: str, flags: Flags = Flags()):
+async def rip_playlist(url: Playlist, codec: str, flags: Flags = Flags(), done_callback: callable = None):
     playlist_info = await it(WebAPI).get_playlist_info_and_tracks(url.id, url.storefront, it(Config).region.language)
     playlist_info = playlist_write_song_index(playlist_info)
     logger = RipLogger(url.type, url.id)
@@ -218,11 +233,25 @@ async def rip_playlist(url: Playlist, codec: str, flags: Flags = Flags()):
 
     logger.create()
 
+    saved_files = []
     async def on_children_done():
         logger.done()
+        if done_callback:
+            zip_path = saved_files[0].parent / (playlist_info.data[0].attributes.name + ".zip")
+            with zipfile.ZipFile(zip_path, 'w') as zipf:
+                for file in saved_files:
+                    zipf.write(file, file.name)
+            
+            for file in saved_files:
+                file.unlink()
+
+            done_callback(zip_path)
+
+    def song_done_callback(filename):
+        saved_files.append(filename)
 
     done_handler = ParentDoneHandler(len(playlist_info.data[0].relationships.tracks.data), on_children_done)
 
     for track in playlist_info.data[0].relationships.tracks.data:
         song = Song(id=track.id, storefront=url.storefront, url="", type=URLType.Song)
-        safely_create_task(rip_song(song, codec, flags, done_handler, playlist=playlist_info))
+        safely_create_task(rip_song(song, codec, flags, done_handler, playlist=playlist_info, done_callback=song_done_callback))
