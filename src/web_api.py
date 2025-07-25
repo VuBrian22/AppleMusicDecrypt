@@ -9,14 +9,7 @@ import uvicorn
 
 app = FastAPI()
 shell = None
-
-static_path = pathlib.Path(__file__).parent.resolve() / "static"
-
-app.mount("/static", StaticFiles(directory=static_path), name="static")
-
-@app.get("/")
-async def read_index():
-    return FileResponse(static_path / 'index.html')
+static_path_global = None
 
 class DownloadRequest(BaseModel):
     url: str
@@ -27,7 +20,15 @@ async def download(request: DownloadRequest):
     asyncio.run_coroutine_threadsafe(shell.execute_command(command), shell.loop)
     return {"message": "Download started"}
 
-def start_web_server(main_loop: asyncio.AbstractEventLoop, shell_instance: InteractiveShell):
-    global shell
+def start_web_server(main_loop: asyncio.AbstractEventLoop, shell_instance: InteractiveShell, static_path: pathlib.Path):
+    global shell, static_path_global
     shell = shell_instance
+    static_path_global = static_path
+    
+    app.mount("/static", StaticFiles(directory=static_path_global), name="static")
+
+    @app.get("/")
+    async def read_index():
+        return FileResponse(static_path_global / 'index.html')
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

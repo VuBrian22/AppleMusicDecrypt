@@ -28,10 +28,12 @@ add_creator(MeasurerCreator)
 from src.cmd import InteractiveShell
 from src.web_api import start_web_server
 import threading
+import pathlib
 
 if __name__ == '__main__':
     cmd = InteractiveShell(loop)
-    web_server_thread = threading.Thread(target=start_web_server, args=(loop, cmd))
+    static_path = pathlib.Path(__file__).parent.resolve() / "src" / "static"
+    web_server_thread = threading.Thread(target=start_web_server, args=(loop, cmd, static_path))
     web_server_thread.daemon = True
     web_server_thread.start()
 
