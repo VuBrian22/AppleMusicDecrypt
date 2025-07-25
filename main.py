@@ -33,9 +33,49 @@ import pathlib
 if __name__ == '__main__':
     cmd = InteractiveShell(loop)
     
-    # Ensure the static directory exists before starting the server
+    # Ensure the static directory and index.html exist before starting the server
     static_path = pathlib.Path(__file__).parent.resolve() / "static"
     static_path.mkdir(exist_ok=True)
+    
+    index_html_content = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Apple Music Decrypt</title>
+</head>
+<body>
+    <h1>Apple Music Decrypt</h1>
+    <input type="text" id="apple-music-url" placeholder="Paste Apple Music URL here" size="100">
+    <button onclick="download()">Download</button>
+    <p id="status"></p>
+
+    <script>
+        async function download() {
+            const url = document.getElementById('apple-music-url').value;
+            const status = document.getElementById('status');
+            status.textContent = 'Starting download...';
+
+            const response = await fetch('/api/download', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: url }),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                status.textContent = result.message;
+            } else {
+                status.textContent = 'Error: ' + result.error;
+            }
+        }
+    </script>
+</body>
+</html>
+"""
+    (static_path / "index.html").write_text(index_html_content)
 
     web_server_thread = threading.Thread(target=start_web_server, args=(loop, cmd, static_path))
     web_server_thread.daemon = True
