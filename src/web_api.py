@@ -2,7 +2,8 @@ import asyncio
 import os
 import pathlib
 import queue
-from fastapi import FastAPI, Request
+import shutil
+from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -34,12 +35,17 @@ async def read_index(request: Request):
     return FileResponse(static_path / 'index.html')
 
 @app.get("/api/download-file")
-async def download_file(filename: str):
+async def download_file(filename: str, background_tasks: BackgroundTasks):
     file_path = pathlib.Path(filename).resolve()
-    try:
-        return FileResponse(file_path, media_type='application/octet-stream', filename=file_path.name)
-    finally:
-        pass
+    
+    def cleanup():
+        try:
+            shutil.rmtree(file_path.parent)
+        except OSError as e:
+            print(f"Error deleting directory {file_path.parent}: {e}")
+
+    background_tasks.add_task(cleanup)
+    return FileResponse(file_path, media_type='application/octet-stream', filename=file_path.name)
 
 def start_web_server(main_loop: asyncio.AbstractEventLoop, shell_instance: InteractiveShell, static_path: pathlib.Path):
     app.state.shell = shell_instance
