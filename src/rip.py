@@ -75,17 +75,8 @@ async def decrypt_done(adam_id: str):
     task.logger.saved()
 
     if task.done_callback:
-        song_path = saved_files[0]
-        zip_path = song_path.parent / (song_path.stem + ".zip")
-        with zipfile.ZipFile(zip_path, 'w') as zipf:
-            for file in saved_files:
-                zipf.write(file, arcname=file.name)
-        
-        for file in saved_files:
-            file.unlink()
-
-        await asyncio.sleep(1) # Add a 1-second delay
-        task.done_callback(zip_path)
+        # No zipping here. Just pass the list of raw file paths to the callback.
+        task.done_callback(saved_files)
 
     await task_done(task, Status.DONE)
 
@@ -96,7 +87,24 @@ async def decrypt_done(adam_id: str):
 
 async def rip_song(url: Song, codec: str, flags: Flags = Flags(),
                    parent_done: ParentDoneHandler = None, playlist: PlaylistInfo = None, done_callback: callable = None):
-    task = Task(adam_id=url.id, parent_done=parent_done, playlist=playlist, done_callback=done_callback)
+    
+    def song_done_callback(saved_files):
+        if not parent_done and done_callback: # This is a single song download
+            song_path = saved_files[0]
+            zip_path = song_path.parent / (song_path.stem + ".zip")
+            with zipfile.ZipFile(zip_path, 'w') as zipf:
+                for file in saved_files:
+                    zipf.write(file, arcname=file.name)
+            
+            for file in saved_files:
+                file.unlink()
+
+            done_callback(zip_path)
+        elif done_callback:
+            done_callback(saved_files)
+
+
+    task = Task(adam_id=url.id, parent_done=parent_done, playlist=playlist, done_callback=song_done_callback)
     adam_id_task_mapping[url.id] = task
     task.init_logger()
     await task_lock.acquire()
@@ -194,8 +202,8 @@ async def rip_album(url: Album, codec: str, flags: Flags = Flags(), parent_done:
 
             done_callback(zip_path)
 
-    def song_done_callback(filename):
-        saved_files.append(filename)
+    def song_done_callback(files):
+        saved_files.extend(files)
 
     done_handler = ParentDoneHandler(len(album_info.data[0].relationships.tracks.data), on_children_done)
 
@@ -248,8 +256,8 @@ async def rip_playlist(url: Playlist, codec: str, flags: Flags = Flags(), done_c
 
             done_callback(zip_path)
 
-    def song_done_callback(filename):
-        saved_files.append(filename)
+    def song_done_callback(files):
+        saved_files.extend(files)
 
     done_handler = ParentDoneHandler(len(playlist_info.data[0].relationships.tracks.data), on_children_done)
 
