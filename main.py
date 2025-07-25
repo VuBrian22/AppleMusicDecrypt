@@ -30,11 +30,11 @@ from src.web_api import start_web_server
 import threading
 
 if __name__ == '__main__':
-    web_server_thread = threading.Thread(target=start_web_server, args=(loop,))
+    cmd = InteractiveShell(loop)
+    web_server_thread = threading.Thread(target=start_web_server, args=(loop, cmd))
     web_server_thread.daemon = True
     web_server_thread.start()
 
-    cmd = InteractiveShell(loop)
     try:
         loop.run_until_complete(cmd.start())
     except KeyboardInterrupt:

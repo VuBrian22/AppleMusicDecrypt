@@ -61,6 +61,9 @@ class InteractiveShell:
                 self.loop.stop()
                 sys.exit()
 
+    async def execute_command(self, cmd: str):
+        await self.command_parser(cmd)
+
     async def do_download(self, raw_url: str, codec: str, force_download: bool, include: bool = False):
         url = AppleMusicURL.parse_url(raw_url)
         if not url:
