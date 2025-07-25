@@ -9,11 +9,11 @@ import uvicorn
 app = FastAPI()
 shell = None
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="src/static"), name="static")
 
 @app.get("/")
 async def read_index():
-    return FileResponse('static/index.html')
+    return FileResponse('src/static/index.html')
 
 class DownloadRequest(BaseModel):
     url: str
