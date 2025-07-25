@@ -52,8 +52,6 @@ async def recv_decrypted_sample(adam_id: str, sample_index: int, sample: bytes):
         safely_create_task(decrypt_done(adam_id))
 
 
-import zipfile
-
 import tempfile
 import shutil
 
@@ -92,17 +90,7 @@ async def rip_song(url: Song, codec: str, flags: Flags = Flags(),
                    parent_done: ParentDoneHandler = None, playlist: PlaylistInfo = None, done_callback: callable = None):
     
     def song_done_callback(saved_files):
-        if not parent_done and done_callback: # This is a single song download
-            song_path = saved_files[0]
-            zip_path = song_path.parent / (song_path.stem + ".zip")
-            with zipfile.ZipFile(zip_path, 'w') as zipf:
-                for file in saved_files:
-                    zipf.write(file, arcname=file.name)
-            
-            shutil.rmtree(song_path.parent)
-
-            done_callback(zip_path)
-        elif done_callback:
+        if done_callback:
             done_callback(saved_files)
 
 
@@ -194,14 +182,7 @@ async def rip_album(url: Album, codec: str, flags: Flags = Flags(), parent_done:
             await parent_done.try_done()
         
         if done_callback:
-            zip_path = saved_files[0].parent / (album_info.data[0].attributes.name + ".zip")
-            with zipfile.ZipFile(zip_path, 'w') as zipf:
-                for file in saved_files:
-                    zipf.write(file, arcname=file.name)
-            
-            shutil.rmtree(saved_files[0].parent)
-
-            done_callback(zip_path)
+            done_callback(saved_files)
 
     def song_done_callback(files):
         saved_files.extend(files)
@@ -247,14 +228,7 @@ async def rip_playlist(url: Playlist, codec: str, flags: Flags = Flags(), done_c
     async def on_children_done():
         logger.done()
         if done_callback:
-            zip_path = saved_files[0].parent / (playlist_info.data[0].attributes.name + ".zip")
-            with zipfile.ZipFile(zip_path, 'w') as zipf:
-                for file in saved_files:
-                    zipf.write(file, arcname=file.name)
-
-            shutil.rmtree(saved_files[0].parent)
-
-            done_callback(zip_path)
+            done_callback(saved_files)
 
     def song_done_callback(files):
         saved_files.extend(files)

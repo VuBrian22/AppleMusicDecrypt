@@ -53,17 +53,17 @@ if __name__ == '__main__':
             <button onclick="download()">Download</button>
         </div>
         <p id="status"></p>
-        <a id="download-link" style="display:none">Download File</a>
+        <div id="download-links"></div>
     </div>
 
     <script>
         async function download() {
             const url = document.getElementById('apple-music-url').value;
             const status = document.getElementById('status');
-            const downloadLink = document.getElementById('download-link');
+            const downloadLinks = document.getElementById('download-links');
 
             status.textContent = 'Starting download...';
-            downloadLink.style.display = 'none';
+            downloadLinks.innerHTML = '';
 
             const response = await fetch('/api/download', {
                 method: 'POST',
@@ -75,11 +75,15 @@ if __name__ == '__main__':
 
             const result = await response.json();
 
-            if (response.ok && result.filename) {
+            if (response.ok && result.filenames) {
                 status.textContent = result.message;
-                downloadLink.href = `/api/download-file?filename=${encodeURIComponent(result.filename)}`;
-                downloadLink.download = result.filename.split('/').pop(); // Suggest a filename for the user
-                downloadLink.style.display = 'block';
+                for (const filename of result.filenames) {
+                    const link = document.createElement('a');
+                    link.href = `/api/download-file?filename=${encodeURIComponent(filename)}`;
+                    link.textContent = filename.split(/[\\/]/).pop();
+                    link.style.display = 'block';
+                    downloadLinks.appendChild(link);
+                }
             } else {
                 status.textContent = 'Error: ' + (result.message || 'Unknown error');
             }

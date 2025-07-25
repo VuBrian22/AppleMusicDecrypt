@@ -22,8 +22,8 @@ async def download(request: DownloadRequest, app_request: Request):
     asyncio.run_coroutine_threadsafe(shell.execute_command(command, q), shell.loop)
     
     try:
-        filename = q.get(timeout=300) # 5 minute timeout
-        return {"message": "Download complete", "filename": str(filename)}
+        filenames = q.get(timeout=300) # 5 minute timeout
+        return {"message": "Download complete", "filenames": [str(f) for f in filenames]}
     except queue.Empty:
         return {"message": "Download timed out"}
 
