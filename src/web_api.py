@@ -40,7 +40,7 @@ async def download_file(filename: str, background_tasks: BackgroundTasks):
     
     def cleanup():
         import time
-        time.sleep(5) # 5 second delay
+        time.sleep(15) # 15 second delay
         try:
             shutil.rmtree(file_path.parent)
         except OSError as e:
