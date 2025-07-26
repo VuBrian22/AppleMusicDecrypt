@@ -74,12 +74,28 @@ if __name__ == '__main__':
             });
 
             const result = await response.json();
+            const sessionId = result.session_id;
 
-            if (response.ok && result.filename) {
-                status.textContent = result.message;
-                downloadLink.href = `/api/download-file?filename=${encodeURIComponent(result.filename)}`;
-                downloadLink.download = result.filename.split(/[\\/]/).pop();
-                downloadLink.style.display = 'block';
+            if (response.ok && sessionId) {
+                status.textContent = 'Download started. Checking status...';
+                
+                const interval = setInterval(async () => {
+                    const statusResponse = await fetch(`/api/status/${sessionId}`);
+                    const statusResult = await statusResponse.json();
+
+                    status.textContent = `Status: ${statusResult.status}`;
+
+                    if (statusResult.status === 'complete') {
+                        clearInterval(interval);
+                        status.textContent = 'Download complete!';
+                        downloadLink.href = `/api/download-file?filename=${encodeURIComponent(statusResult.zip_path)}`;
+                        downloadLink.download = statusResult.zip_path.split(/[\\/]/).pop();
+                        downloadLink.style.display = 'block';
+                    } else if (statusResult.status === 'failed') {
+                        clearInterval(interval);
+                        status.textContent = 'Download failed.';
+                    }
+                }, 2000);
             } else {
                 status.textContent = 'Error: ' + (result.message || 'Unknown error');
             }
@@ -152,7 +168,7 @@ button {
 """
     (static_path / "styles.css").write_text(styles_css_content)
 
-    web_server_thread = threading.Thread(target=start_web_server, args=(loop, cmd, static_path))
+    web_server_thread = threading.Thread(target=start_web_server, args=(loop, static_path))
     web_server_thread.daemon = True
     web_server_thread.start()
 

@@ -1,33 +1,32 @@
 import asyncio
 import os
 import pathlib
-import queue
 import shutil
 from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from src.cmd import InteractiveShell
+from src.download_manager import DownloadManager
 import uvicorn
 
 app = FastAPI()
+download_manager = DownloadManager()
 
 class DownloadRequest(BaseModel):
     url: str
 
 @app.post("/api/download")
-async def download(request: DownloadRequest, app_request: Request):
-    shell = app_request.app.state.shell
-    q = queue.Queue()
-    command = f"dl {request.url}"
-    asyncio.run_coroutine_threadsafe(shell.execute_command(command, q), shell.loop)
-    
-    try:
-        zip_path = q.get(timeout=300) # 5 minute timeout
-        return {"message": "Download complete", "filename": str(zip_path)}
-    except queue.Empty:
-        return {"message": "Download timed out"}
+async def download(request: DownloadRequest):
+    session_id = download_manager.create_session()
+    asyncio.create_task(download_manager.start_download(session_id, request.url))
+    return {"session_id": session_id}
 
+@app.get("/api/status/{session_id}")
+async def get_status(session_id: str):
+    session = download_manager.get_session(session_id)
+    if not session:
+        return {"status": "not_found"}
+    return session
 
 @app.get("/")
 async def read_index(request: Request):
@@ -49,8 +48,7 @@ async def download_file(filename: str, background_tasks: BackgroundTasks):
     background_tasks.add_task(cleanup)
     return FileResponse(file_path, media_type='application/zip', filename=file_path.name)
 
-def start_web_server(main_loop: asyncio.AbstractEventLoop, shell_instance: InteractiveShell, static_path: pathlib.Path):
-    app.state.shell = shell_instance
+def start_web_server(main_loop: asyncio.AbstractEventLoop, static_path: pathlib.Path):
     app.state.static_path = static_path
     app.state.loop = main_loop
     
