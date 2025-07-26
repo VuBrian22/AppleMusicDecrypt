@@ -1,5 +1,7 @@
 import asyncio
 import subprocess
+import tempfile
+import zipfile
 from typing import Dict
 
 from creart import it
@@ -69,7 +71,8 @@ async def decrypt_done(adam_id: str):
     if not await run_sync(check_song_integrity, song):
         task.logger.failed_integrity()
 
-    saved_files = await run_sync(lambda: save(song, codec, task.metadata, task.playlist))
+    temp_dir = tempfile.mkdtemp()
+    saved_files = await run_sync(lambda: save(song, codec, task.metadata, task.playlist, temp_dir=temp_dir))
     task.logger.saved()
 
     if task.done_callback:
@@ -86,7 +89,18 @@ async def rip_song(url: Song, codec: str, flags: Flags = Flags(),
                    parent_done: ParentDoneHandler = None, playlist: PlaylistInfo = None, done_callback: callable = None):
     
     def song_done_callback(saved_files):
-        if done_callback:
+        if not parent_done and done_callback: # This is a single song download
+            temp_dir = tempfile.mkdtemp()
+            zip_path = pathlib.Path(temp_dir) / (saved_files[0].stem + ".zip")
+            with zipfile.ZipFile(zip_path, 'w') as zipf:
+                for file in saved_files:
+                    zipf.write(file, arcname=file.name)
+            
+            for file in saved_files:
+                file.unlink()
+
+            done_callback(zip_path)
+        elif done_callback:
             done_callback(saved_files)
 
 
@@ -178,7 +192,16 @@ async def rip_album(url: Album, codec: str, flags: Flags = Flags(), parent_done:
             await parent_done.try_done()
         
         if done_callback:
-            done_callback(saved_files)
+            temp_dir = tempfile.mkdtemp()
+            zip_path = pathlib.Path(temp_dir) / (album_info.data[0].attributes.name + ".zip")
+            with zipfile.ZipFile(zip_path, 'w') as zipf:
+                for file in saved_files:
+                    zipf.write(file, arcname=file.name)
+            
+            for file in saved_files:
+                file.unlink()
+
+            done_callback(zip_path)
 
     def song_done_callback(files):
         saved_files.extend(files)
@@ -224,7 +247,16 @@ async def rip_playlist(url: Playlist, codec: str, flags: Flags = Flags(), done_c
     async def on_children_done():
         logger.done()
         if done_callback:
-            done_callback(saved_files)
+            temp_dir = tempfile.mkdtemp()
+            zip_path = pathlib.Path(temp_dir) / (playlist_info.data[0].attributes.name + ".zip")
+            with zipfile.ZipFile(zip_path, 'w') as zipf:
+                for file in saved_files:
+                    zipf.write(file, arcname=file.name)
+            
+            for file in saved_files:
+                file.unlink()
+
+            done_callback(zip_path)
 
     def song_done_callback(files):
         saved_files.extend(files)
